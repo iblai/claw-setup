@@ -32,7 +32,7 @@ Student (browser) → ibl.ai Platform (Django Channels / ASGI)
 Before starting, you need:
 
 1. **A VPS or dedicated server**: Hetzner CX22 (2 vCPU, 4 GB RAM, ~$4/mo) is sufficient. OpenClaw is lightweight; the LLM API call is the bottleneck, not local compute. Use the Ashburn location for US East proximity.
-2. **A domain or subdomain** pointing to the server's **actual IP** (not an elastic IP, see [Snags Reference](#snags-reference)).
+2. **A domain or subdomain** pointing to the server's **actual IP** (not an elastic IP, see [Troubleshooting](#troubleshooting)).
 3. **Anthropic API key** (or another LLM provider key).
 4. **Ports 80 and 443 open** on your cloud firewall **before** installing Caddy.
 
@@ -214,7 +214,7 @@ curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:18789/
 # Expected: 200
 ```
 
-> **Why `loginctl enable-linger root`?** OpenClaw installs a **user-level** systemd service. Without lingering, the service dies when the last SSH session closes. The `openclaw onboard --install-daemon` wizard handles this automatically, but if you skip the wizard you must run it yourself. Verify with `loginctl show-user root 2>/dev/null | grep Linger`. It should show `Linger=yes`. See [Snag #11](#snags-reference) for what happens when this is missed.
+> **Why `loginctl enable-linger root`?** OpenClaw installs a **user-level** systemd service. Without lingering, the service dies when the last SSH session closes. The `openclaw onboard --install-daemon` wizard handles this automatically, but if you skip the wizard you must run it yourself. Verify with `loginctl show-user root 2>/dev/null | grep Linger`. It should show `Linger=yes`. See [Troubleshooting](#troubleshooting) for what happens when this is missed.
 
 ---
 
@@ -559,7 +559,7 @@ Making pairing survive restarts and updates is a known gap. The durable fixes ar
 
 ---
 
-## Snags Reference
+## Troubleshooting
 
 Issues encountered during initial deployments, collected here for quick reference.
 

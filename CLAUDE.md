@@ -11,6 +11,9 @@ Setup guides and documentation for deploying claw servers (OpenClaw, NVIDIA Nemo
 - `README.md` -- Visual landing page (follows iblai-infra-cli format with centered logo, badges)
 - `docs/server-setup.md` -- Full guide: install OpenClaw, configure Caddy for TLS, systemd service, firewall, monitoring
 - `docs/platform-integration.md` -- Full guide: register instance via API, bind mentors, configure agents, manage skills, push config
+- `docs/nemoclaw-setup.md` -- NemoClaw on a public VPS with root
+- `docs/nemoclaw-restricted-host.md` -- NemoClaw on a host without root, proxy-only egress, inbound through an existing TLS endpoint, model access through a host relay
+- `scripts/inference-relay.cjs` -- Host relay used by the restricted-host guide
 
 ## Two Core Components
 

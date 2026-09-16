@@ -31,6 +31,8 @@ curl -fsSL https://raw.githubusercontent.com/iblai/claw-setup/main/install.sh | 
 
 It prompts for the domain, the LLM provider + API key (OpenClaw) or runs NemoClaw's own wizard, the sandbox / plugin / firewall choices, and whether to register on ibl.ai. Then it does the whole server side -- OpenClaw (or NemoClaw), Caddy with automatic TLS, the firewall, and the `iblai-openclaw-extensions` plugin -- and optionally the platform side (claw instance + mentor via [`scripts/seed_claw_mentor.py`](scripts/seed_claw_mentor.py), wiring in the device key). Finally it prints the gateway token, an Ed25519 device key, and the API call to register the instance.
 
+> **Locked-down host?** No root, outbound traffic only through a forward proxy, or inbound only through a TLS endpoint you don't operate? `install.sh` does not apply. Follow [NemoClaw on a Restricted Host](docs/nemoclaw-restricted-host.md) instead.
+
 Point your domain's DNS A record at the server and open ports 80/443 first. Answers are cached in `~/.cache/iblai-claw-setup` and offered as defaults next time. Re-running is safe -- it never regenerates an existing token or key. Prefer the manual steps below to understand each piece.
 
 > **Note:** This guide runs against the hosted [iblai.app](https://iblai.app) environment. If you'd like a license to run the full ibl.ai platform locally or on your own infrastructure, reach out to our team at [ibl.ai/contact](https://ibl.ai/contact).
@@ -115,7 +117,9 @@ Open any ibl.ai application (Mentor AI, Skills AI, or your own integration) and 
 |---|---|
 | **[Server Setup](docs/server-setup.md)** | Install OpenClaw, configure Caddy, set up systemd, validate the deployment |
 | **[Platform Integration](docs/platform-integration.md)** | Register instance, configure mentors and agents, manage skills, API reference |
+| **[NemoClaw Setup](docs/nemoclaw-setup.md)** | Install NemoClaw on a public VPS with root, behind Caddy |
+| **[NemoClaw on a Restricted Host](docs/nemoclaw-restricted-host.md)** | NemoClaw on a host without root, with outbound traffic only through a forward proxy and inbound through an existing TLS endpoint |
 
 ## Troubleshooting
 
-See the [troubleshooting section](docs/server-setup.md#troubleshooting) in the server setup guide and the [connectivity checks](docs/platform-integration.md#test-connectivity) in the platform integration guide.
+See the [troubleshooting section](docs/server-setup.md#troubleshooting) in the server setup guide, the [connectivity checks](docs/platform-integration.md#test-connectivity) in the platform integration guide, and the [restricted-host troubleshooting table](docs/nemoclaw-restricted-host.md#troubleshooting) for proxy-only deployments.

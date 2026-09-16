@@ -19,6 +19,9 @@ Practical consequences for the setup:
 
 If you already know OpenClaw, read this guide in conjunction with [OpenClaw Server Setup](server-setup.md). Firewall, Caddy reverse-proxy, device-identity, and ibl.ai platform integration work identically.
 
+> [!NOTE]
+> **No root, outbound only through a forward proxy, or inbound only through an existing TLS endpoint?** This guide assumes a public VPS with root. Use [NemoClaw on a Restricted Host](nemoclaw-restricted-host.md) instead.
+
 ---
 
 ## Architecture
@@ -79,7 +82,7 @@ Student (browser) → ibl.ai Platform (Django Channels / ASGI)
 
 NemoClaw bakes its Control UI **origin allowlist** into the sandbox image when `nemoclaw onboard` runs. The default allowlist is `http://127.0.0.1:18789` only. A browser that opens the dashboard as `https://domain.example.com` will be rejected unless that origin is in the allowlist.
 
-Fixing this after the fact requires either recreating the sandbox or running `openclaw config set gateway.controlUi.allowedOrigins ...` inside it (see [Part 4](#part-4-hostname-access-configuration)). Save yourself the recreate. Export `CHAT_UI_URL` before running the installer:
+Fixing this after the fact requires either recreating the sandbox or running `openclaw config set gateway.controlUi.allowedOrigins ...` inside it (see [Part 4](#part-4-hostname-access-configuration)). Setting it up front avoids that rebuild. Export `CHAT_UI_URL` before running the installer:
 
 ```bash
 export CHAT_UI_URL="https://domain.example.com"
@@ -397,7 +400,7 @@ The platform-side integration is identical for NemoClaw and OpenClaw. The gatewa
 - [OpenClaw Part 5.3: Push config](server-setup.md#53-push-config)
 - [OpenClaw Part 5.4: Test chat through the platform](server-setup.md#54-test-chat-through-the-platform)
 
-One gotcha: when the ibl.ai backend pushes config via the gateway, the changes are applied to the OpenClaw instance **inside the sandbox**. To inspect the effective config, drop in with `nemoclaw <sandbox-name> connect` and run `openclaw config get`. The `~/.openclaw/openclaw.json` on the host is not the live config.
+One point to watch: when the ibl.ai backend pushes config via the gateway, the changes are applied to the OpenClaw instance **inside the sandbox**. To inspect the effective config, drop in with `nemoclaw <sandbox-name> connect` and run `openclaw config get`. The `~/.openclaw/openclaw.json` on the host is not the live config.
 
 Two NemoClaw-specific differences from the OpenClaw flow:
 
@@ -572,7 +575,7 @@ Avoid `npm update -g openclaw` directly. NemoClaw manages the OpenClaw version i
 
 ---
 
-## Snags Reference
+## Troubleshooting
 
 | #   | Issue                                                                                                            | Root cause                                                                                                                                      | Fix                                                                                                                                                                |
 | --- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
