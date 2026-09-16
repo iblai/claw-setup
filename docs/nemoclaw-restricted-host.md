@@ -13,7 +13,7 @@ On a host like this, NemoClaw's built-in inference paths could not reach the mod
 > **Versions this guide follows:** NemoClaw v0.0.109, OpenShell 0.0.101 and OpenClaw 2026.7.1, on a non-Debian Linux host with no root access and outbound traffic only through a forward proxy. The steps come from a working deployment on those versions. NemoClaw moves quickly, so record your versions ([Step 3.4](#34-record-versions)) and expect some differences on newer releases.
 
 > [!NOTE]
-> **The commands are examples, not a turnkey script.** They assume a Linux host with Docker, `curl` and GNU userland, and they name paths, ports and addresses that differ between environments. Read each step before running it, substitute your own values, and work through the sequence somewhere you can afford to rebuild before you run it where it matters. `scripts/inference-relay.cjs` is a reference implementation in the same spirit: short enough to review in full, and meant to be adapted.
+> **The commands are examples, not a turnkey script.** They assume a Linux host with Docker, `curl` and GNU userland, and they name paths, ports and addresses that differ between environments. Read each step before running it, substitute your own values, and rehearse the sequence on a host you can rebuild. `scripts/inference-relay.cjs` is a reference implementation in the same spirit: short enough to review in full, and meant to be adapted.
 
 ---
 
@@ -99,7 +99,7 @@ Ask for **exact hostnames**, and check how the proxy matches them. Some proxies 
 | `deb.debian.org` | system packages inside the image build |
 | `ollama.com`, `registry.ollama.ai` | only on the local-model route in [Part 3](#part-3-install-nemoclaw); not needed if you onboard straight at the relay |
 
-Include `codeload.github.com` and `objects.githubusercontent.com` as well if the allowlist is cheap to extend. They are GitHub's download hosts, and adding them up front avoids a second request.
+`codeload.github.com` and `objects.githubusercontent.com` are GitHub's download hosts. Request them in the same batch: if a download redirects to one of them mid-install, a second approval round costs more than the two extra entries.
 
 **Needed for normal operation:**
 
@@ -138,7 +138,7 @@ NemoClaw needs 4+ vCPU and 8 GB RAM minimum. Images go under Docker's data root,
 
 ### 1.2 Find the proxy
 
-Get the proxy address from whoever runs the network. Without proxy settings, requests from a shell just time out. If Docker on the host already pulls images through the proxy, the address is also in `/etc/docker/daemon.json`:
+Get the proxy address from whoever runs the network. Without proxy settings, requests from a shell time out rather than returning an error that names the cause. If Docker on the host already pulls images through the proxy, the address is also in `/etc/docker/daemon.json`:
 
 ```bash
 cat /etc/docker/daemon.json     # look for a "proxies" block
@@ -272,7 +272,7 @@ docker exec -e OLLAMA_HOST=http://127.0.0.1:11434 ollama ollama list
 curl -s http://127.0.0.1:11434/api/version
 ```
 
-Always pass `-e OLLAMA_HOST=http://127.0.0.1:11434` to `ollama` CLI commands. The image sets `OLLAMA_HOST=http://0.0.0.0:11434`, an address a `NO_PROXY` list won't normally match, so the CLI's requests head for the proxy instead of the local server. The symptom is bare: `Error: something went wrong, please see the ollama server logs for details`, with nothing in the server log.
+Always pass `-e OLLAMA_HOST=http://127.0.0.1:11434` to `ollama` CLI commands. The image sets `OLLAMA_HOST=http://0.0.0.0:11434`, an address a `NO_PROXY` list won't normally match, so the CLI sends its requests to the proxy instead of the local server. The only symptom is `Error: something went wrong, please see the ollama server logs for details`, with nothing in the server log.
 
 `OLLAMA_NO_CLOUD=1` stops ollama's periodic calls to `ollama.com`; see [Part 9](#part-9-turn-off-outbound-calls-you-dont-need).
 
@@ -375,7 +375,7 @@ docker run --rm --pull=never -u "$SBX_UID:$SBX_UID" --entrypoint sh -v <data-dir
   -c 'ls -l /sandbox/data | head -3 && echo READ-OK'
 ```
 
-`READ-OK` means the mount will work. The check runs a real container against the real directory as the sandbox user, so it also surfaces host security policy that would block the read, whatever form that takes. Any image already on the host will do; the ollama image is handy because Part 3 has already pulled it. Files need to be readable by "other" (for example mode `644`): a file readable only by its owner and group is denied.
+`READ-OK` means the mount will work. The check runs a real container against the real directory as the sandbox user, so it also surfaces host security policy that would block the read, whatever form that takes. Any image already on the host will do. The example uses the ollama image because Part 3 has already pulled it. Files need to be readable by "other" (for example mode `644`): a file readable only by its owner and group is denied.
 
 ---
 
@@ -509,7 +509,7 @@ NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 nemoclaw onboard --non-interactive --fres
 
 Drop `--host-mount` if you skipped Part 4.
 
-Use this combination as written. The image build doesn't need the shell proxy, because it uses `~/.docker/config.json`. If you do vary it, by keeping the proxy variables set here or dropping a trusted-host variable, confirm inference end to end afterwards.
+Use this combination as written. The image build doesn't need the shell proxy, because it uses `~/.docker/config.json`. Any variation, such as keeping the proxy variables set here or dropping a trusted-host variable, needs an end-to-end inference check afterwards.
 
 Expect in the output:
 
@@ -595,7 +595,7 @@ cd ~ && rm -rf "$BUILD"
 
 ### 6.2 Assemble the plugin directory
 
-A stock NemoClaw image has no plugin source inside the sandbox. Copy in a complete plugin (`openclaw.plugin.json`, `package.json` and `dist/index.mjs`), not just the built file. A fresh clone plus the built file has no `node_modules`, which is what you want: `node_modules` symlinks make sandbox backups fail.
+A stock NemoClaw image has no plugin source inside the sandbox. Copy in a complete plugin (`openclaw.plugin.json`, `package.json` and `dist/index.mjs`), not just the built file. A fresh clone plus the built file has no `node_modules`, and it should stay that way: `node_modules` symlinks make sandbox backups fail.
 
 ```bash
 mkdir -p ~/iblai/plugin-src && cd ~/iblai/plugin-src
@@ -773,7 +773,7 @@ POST /api/ai-mentor/orgs/<your-org>/mentors/<mentor>/claw-config/push-config/
 
 A successful push lists `IDENTITY.md` in `files_pushed`.
 
-The push also returns a baseline check, which on a default worker reports `Elevated tools are enabled` and `Session isolation not configured`. The first concerns what the agent's tools are permitted to do inside the sandbox, the second whether each chat session gets its own isolated agent state. Neither blocks the deployment, and both are worth a decision rather than a shrug: settle them against the deployment's requirements before go-live, and record what you chose.
+The push also returns a baseline check, which on a default worker reports `Elevated tools are enabled` and `Session isolation not configured`. The first concerns what the agent's tools are permitted to do inside the sandbox, the second whether each chat session gets its own isolated agent state. Neither blocks the deployment. Decide on both against the deployment's requirements before go-live, and record what you chose.
 
 The agent's own outbound access is limited twice: by the sandbox network policy, and by the forward proxy. Tools that fetch from the internet or install packages fail unless both allow the destination.
 
