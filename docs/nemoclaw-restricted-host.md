@@ -13,7 +13,7 @@ On a host like this, NemoClaw's built-in inference paths could not reach the mod
 > **Versions this guide follows:** NemoClaw v0.0.109, OpenShell 0.0.101 and OpenClaw 2026.7.1, on a non-Debian Linux host with no root access and outbound traffic only through a forward proxy. The steps come from a working deployment on those versions. NemoClaw moves quickly, so record your versions ([Step 3.4](#34-record-versions)) and expect some differences on newer releases.
 
 > [!NOTE]
-> **The commands are examples, not a turnkey script.** They assume a Linux host with Docker, `curl` and GNU userland, and they name paths, ports and addresses that differ between environments. Read each step before running it, substitute your own values, and rehearse the sequence on a host you can rebuild. `scripts/inference-relay.cjs` is a reference implementation in the same spirit: short enough to review in full, and meant to be adapted.
+> **The commands are examples, not a turnkey script.** They assume a Linux host with Docker, `curl` and GNU userland, and they name paths, ports and addresses that differ between environments. Read each step before running it, substitute your own values, and try the sequence first on a host you can rebuild. `scripts/inference-relay.cjs` is a reference implementation in the same spirit: short enough to review in full, and meant to be adapted.
 
 ---
 
@@ -138,7 +138,7 @@ NemoClaw needs 4+ vCPU and 8 GB RAM minimum. Images go under Docker's data root,
 
 ### 1.2 Find the proxy
 
-Get the proxy address from whoever runs the network. Without proxy settings, requests from a shell time out rather than returning an error that names the cause. If Docker on the host already pulls images through the proxy, the address is also in `/etc/docker/daemon.json`:
+Get the proxy address from whoever runs the network. Without proxy settings, requests from a shell time out with no explanation. If Docker on the host already pulls images through the proxy, the address is also in `/etc/docker/daemon.json`:
 
 ```bash
 cat /etc/docker/daemon.json     # look for a "proxies" block
@@ -509,7 +509,7 @@ NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 nemoclaw onboard --non-interactive --fres
 
 Drop `--host-mount` if you skipped Part 4.
 
-Use this combination as written. The image build doesn't need the shell proxy, because it uses `~/.docker/config.json`. Any variation, such as keeping the proxy variables set here or dropping a trusted-host variable, needs an end-to-end inference check afterwards.
+Use this combination as written. The image build doesn't need the shell proxy, because it uses `~/.docker/config.json`. If you vary it, by keeping the proxy variables set here or dropping a trusted-host variable, confirm inference end to end afterwards.
 
 Expect in the output:
 
@@ -595,7 +595,7 @@ cd ~ && rm -rf "$BUILD"
 
 ### 6.2 Assemble the plugin directory
 
-A stock NemoClaw image has no plugin source inside the sandbox. Copy in a complete plugin (`openclaw.plugin.json`, `package.json` and `dist/index.mjs`), not just the built file. A fresh clone plus the built file has no `node_modules`, and it should stay that way: `node_modules` symlinks make sandbox backups fail.
+A stock NemoClaw image has no plugin source inside the sandbox. Copy in a complete plugin (`openclaw.plugin.json`, `package.json` and `dist/index.mjs`), not just the built file. A fresh clone plus the built file has no `node_modules`. Leave it out: those symlinks make sandbox backups fail.
 
 ```bash
 mkdir -p ~/iblai/plugin-src && cd ~/iblai/plugin-src
@@ -773,7 +773,7 @@ POST /api/ai-mentor/orgs/<your-org>/mentors/<mentor>/claw-config/push-config/
 
 A successful push lists `IDENTITY.md` in `files_pushed`.
 
-The push also returns a baseline check, which on a default worker reports `Elevated tools are enabled` and `Session isolation not configured`. The first concerns what the agent's tools are permitted to do inside the sandbox, the second whether each chat session gets its own isolated agent state. Neither blocks the deployment. Decide on both against the deployment's requirements before go-live, and record what you chose.
+The push also returns a baseline check, which on a default worker reports `Elevated tools are enabled` and `Session isolation not configured`. The first concerns what the agent's tools are permitted to do inside the sandbox, the second whether each chat session gets its own isolated agent state. Neither blocks the deployment. Review both against your requirements before go-live, and record the decision.
 
 The agent's own outbound access is limited twice: by the sandbox network policy, and by the forward proxy. Tools that fetch from the internet or install packages fail unless both allow the destination.
 
