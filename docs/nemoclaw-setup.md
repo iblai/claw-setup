@@ -19,6 +19,9 @@ Practical consequences for the setup:
 
 If you already know OpenClaw, read this guide in conjunction with [OpenClaw Server Setup](server-setup.md). Firewall, Caddy reverse-proxy, device-identity, and ibl.ai platform integration work identically.
 
+> [!NOTE]
+> **No root, outbound only through a forward proxy, or inbound only through an existing TLS endpoint?** This guide assumes a public VPS with root. Use [NemoClaw on a Restricted Host](nemoclaw-restricted-host.md) instead.
+
 ---
 
 ## Architecture

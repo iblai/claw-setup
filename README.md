@@ -115,7 +115,9 @@ Open any ibl.ai application (Mentor AI, Skills AI, or your own integration) and 
 |---|---|
 | **[Server Setup](docs/server-setup.md)** | Install OpenClaw, configure Caddy, set up systemd, validate the deployment |
 | **[Platform Integration](docs/platform-integration.md)** | Register instance, configure mentors and agents, manage skills, API reference |
+| **[NemoClaw Setup](docs/nemoclaw-setup.md)** | Install NemoClaw on a public VPS with root, behind Caddy |
+| **[NemoClaw on a Restricted Host](docs/nemoclaw-restricted-host.md)** | NemoClaw on a host without root, with outbound traffic only through a forward proxy and inbound through an existing TLS endpoint |
 
 ## Troubleshooting
 
-See the [troubleshooting section](docs/server-setup.md#troubleshooting) in the server setup guide and the [connectivity checks](docs/platform-integration.md#test-connectivity) in the platform integration guide.
+See the [snags reference](docs/server-setup.md#snags-reference) in the server setup guide and the [connectivity checks](docs/platform-integration.md#test-connectivity) in the platform integration guide.
