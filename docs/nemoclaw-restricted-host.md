@@ -91,7 +91,6 @@ Ask for **exact hostnames**, and check how the proxy matches them. Some proxies 
 | `www.nvidia.com` | the NemoClaw installer script |
 | `github.com` | NemoClaw source checkout, plugin clone |
 | `raw.githubusercontent.com` | nvm installer, the relay script |
-| `codeload.github.com`, `objects.githubusercontent.com` | GitHub's download hosts, which clones and archive fetches redirect to |
 | `release-assets.githubusercontent.com` | OpenShell release binaries. Without it the install stops at "Installing OpenShell CLI" with a `403` |
 | `nodejs.org` | Node.js runtime (via nvm) |
 | `registry.npmjs.org` | npm packages in the image build and the plugin build |
@@ -99,6 +98,8 @@ Ask for **exact hostnames**, and check how the proxy matches them. Some proxies 
 | `registry-1.docker.io`, `auth.docker.io`, `production.cloudfront.docker.com` | Docker Hub images (build stages, ollama) |
 | `deb.debian.org` | system packages inside the image build |
 | `ollama.com`, `registry.ollama.ai` | only on the local-model route in [Part 3](#part-3-install-nemoclaw); not needed if you onboard straight at the relay |
+
+`codeload.github.com` and `objects.githubusercontent.com` are GitHub's download hosts. Some fetches redirect there, so they are worth including in the same request.
 
 **Needed for normal operation:**
 
@@ -450,7 +451,7 @@ The relay reads `UPSTREAM_URL` from [Step 5.2](#52-check-the-key-through-the-pro
 - **Why the bridge address:** the sandbox cannot reach a relay that listens on `127.0.0.1`.
 - **Why `x-api-key` is stripped:** onboarding's endpoint check sends that header, and a bearer-token upstream rejects the request with `HTTP 401` when it arrives alongside the bearer token.
 - **Treat the relay as a credential.** It holds the provider key and applies it to every request it accepts, and it has no authentication of its own. It listens on the Docker bridge address, which any container on that network can reach, not only the sandbox, so restrict the port at the host firewall if other containers run here. Never bind it to `0.0.0.0`.
-- **What it accepts:** `POST /v1/messages` and `GET /v1/models`, the two endpoints seen in use here. Anything else gets a `404` and a `blocked` line in the log naming the method and path. A different NemoClaw version or a different provider may call something else, so treat the list as a starting point: widen `ALLOWED` in the script to cover what the log shows, and restart the relay.
+- **What it accepts:** `POST /v1/messages` and `GET /v1/models`, the endpoints this integration uses. Anything else gets a `404` and a `blocked` line in the log naming the method and path. Another NemoClaw version or provider may call something further, so widen `ALLOWED` in the script to match what the log shows and restart the relay.
 - **Rotating the key:** stop the process, confirm it is gone (`pgrep -a -u "$(id -u)" -f inference-relay`), and start it again with the new `UPSTREAM_API_KEY`. The key sits in the process environment, readable by this account and by root, so rotate it rather than editing it in place.
 - **Other providers:** the relay works with any upstream that takes the Anthropic Messages format with bearer authentication. Anything else needs the relay adapted.
 
@@ -866,7 +867,7 @@ Settle this before the deployment is relied on. Without root, some pieces run as
 | Piece | Comes back after a reboot? |
 |---|---|
 | ollama container (`--restart unless-stopped`) | yes |
-| sandbox container | expected yes (Docker restart policy) |
+| sandbox container | yes, under Docker's restart policy |
 | `openshell-gateway` host process (standalone fallback) | **no** |
 | `inference-relay.cjs` (started with `nohup`) | **no** |
 | a manual `openshell forward service` from [Step 3.5](#35-check-the-listener-and-the-tls-endpoint), if you used one | **no** |
