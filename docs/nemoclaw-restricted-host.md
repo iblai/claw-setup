@@ -61,7 +61,7 @@ Forward proxy  →  <upstream-url>
                   (example: https://bedrock-mantle.<aws-region>.api.aws/anthropic)
 ```
 
-The platform connects **inbound** through the TLS endpoint, so the platform connection needs no outbound proxy rule. The only outbound host needed during normal operation is the model provider's endpoint.
+The platform connects **inbound** through the TLS endpoint, so the platform connection needs no outbound proxy rule. Serving chat needs one outbound host, the model provider's endpoint. The worker also refreshes a model price list and can run a scheduled agent turn of its own; [Part 9](#part-9-turn-off-outbound-calls-you-dont-need) covers both and how to switch them off.
 
 **What leaves the host at runtime:** prompts and responses go to the model provider through the forward proxy. The relay stores nothing; its log records method, path, caller address, status and timing only. What the platform side stores is set per mentor in [Part 8](#81-create-the-mentor-and-set-its-flags).
 
@@ -79,6 +79,8 @@ Settle these with whoever runs the host and its network before anyone logs in. E
 
 - The TLS endpoint serves `<public-host>` and forwards 443 to one port on the host, which this guide calls `<DASHBOARD_PORT>`. Pick a port that is free on the host and isn't 8080, which the OpenShell gateway uses.
 - Restrict that rule to the ibl.ai platform's egress address. Ask ibl.ai for the current address.
+- The platform connects over a WebSocket (`wss://<public-host>`), so confirm the endpoint forwards the `Upgrade` header and allows a long-lived idle connection. A proxy that strips the upgrade or closes idle connections early leaves the install looking healthy while pairing and chat fail.
+- Agree who restarts the host-side pieces after a reboot, or arrange the access needed to supervise them. [Reboots and persistence](#reboots-and-persistence) covers what does not come back on its own.
 
 ### 0.3 Outbound proxy allowlist
 
@@ -131,7 +133,7 @@ id                             # must list the docker group
 cat /etc/os-release
 docker info --format 'server={{.ServerVersion}} driver={{.Driver}} root={{.DockerRootDir}}'
 df -h <docker-root-mount>
-type -p git docker systemctl strings    # all four must print a path; node and npm are not needed
+type -p git docker strings systemctl     # git, docker and strings are NemoClaw prerequisites; node and npm are not needed
 ```
 
 NemoClaw needs 4+ vCPU and 8 GB RAM minimum. Images go under Docker's data root, so check free space there, not on `/`.
@@ -166,6 +168,7 @@ PROXY=http://<proxy-host>:<proxy-port>
 PROVIDER_HOST=<model-provider-host>     # for Bedrock: bedrock-mantle.<aws-region>.api.aws
 
 for h in www.nvidia.com github.com raw.githubusercontent.com release-assets.githubusercontent.com \
+         codeload.github.com objects.githubusercontent.com \
          nodejs.org registry.npmjs.org ghcr.io pkg-containers.githubusercontent.com \
          registry-1.docker.io auth.docker.io production.cloudfront.docker.com deb.debian.org \
          ollama.com registry.ollama.ai "$PROVIDER_HOST"; do
@@ -190,8 +193,8 @@ export HTTP_PROXY=$HTTPS_PROXY
 export NO_PROXY=localhost,127.0.0.1,::1,172.18.0.1,inference.local,host.openshell.internal,.internal,.<internal-domain>
 export no_proxy=$NO_PROXY
 
-curl -sI --max-time 10 https://www.nvidia.com | head -1
-# Expected: HTTP/1.1 200 Connection established
+curl -s -o /dev/null -w 'connect=%{http_connect}\n' --max-time 10 https://www.nvidia.com
+# Expected: connect=200, meaning the proxy accepted the tunnel
 ```
 
 `172.18.0.1` is the usual address of the OpenShell sandbox bridge. You confirm it in [Step 5.1](#51-confirm-the-bridge-address-and-a-free-port). `inference.local` and `host.openshell.internal` are sandbox-local names that must never go to the forward proxy.
@@ -375,7 +378,7 @@ docker run --rm --pull=never -u "$SBX_UID:$SBX_UID" --entrypoint sh -v <data-dir
   -c 'ls -l /sandbox/data | head -3 && echo READ-OK'
 ```
 
-`READ-OK` means the mount will work. The check runs a real container against the real directory as the sandbox user, so it also surfaces host security policy that would block the read, whatever form that takes. Any image already on the host will do. The example uses the ollama image because Part 3 has already pulled it. Files need to be readable by "other" (for example mode `644`): a file readable only by its owner and group is denied.
+`READ-OK` means the mount will work. The check runs a real container against the real directory as the sandbox user, so it also surfaces host security policy that would block the read, whatever form that takes. Use any image already on the host, which `docker images` will list. The example names the ollama image, which is present if you took the local-model route. Files need to be readable by "other" (for example mode `644`): a file readable only by its owner and group is denied.
 
 ---
 
@@ -586,9 +589,10 @@ mkdir -p ~/iblai/plugin
 BUILD=$(mktemp -d /var/tmp/iblai-plugin-XXXXXX) && cd "$BUILD"
 git clone --depth 1 https://github.com/iblai/iblai-openclaw-extensions-plugin
 cd iblai-openclaw-extensions-plugin
+git checkout <commit-sha>          # optional: pin to a reviewed commit
 corepack enable pnpm && corepack prepare pnpm@10.17.1 --activate
 pnpm install && pnpm build
-sha256sum dist/index.mjs
+sha256sum dist/index.mjs           # record with the change ticket
 cp dist/index.mjs ~/iblai/plugin/index.mjs
 cd ~ && rm -rf "$BUILD"
 ```

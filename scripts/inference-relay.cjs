@@ -47,6 +47,18 @@ const ALLOWED = [
   { method: "GET", path: "/v1/models" },
 ];
 
+// Connection-specific headers, which belong to one hop and must not be forwarded.
+const HOP_BY_HOP = new Set([
+  "connection",
+  "keep-alive",
+  "proxy-authenticate",
+  "proxy-authorization",
+  "te",
+  "trailer",
+  "transfer-encoding",
+  "upgrade",
+]);
+
 function fail(message) {
   process.stderr.write(`[inference-relay] ${message}\n`);
   process.exit(1);
@@ -55,6 +67,12 @@ function fail(message) {
 if (!TOKEN) fail("UPSTREAM_API_KEY is not set");
 if (!UPSTREAM) fail("UPSTREAM_URL is not set");
 if (!UPSTREAM.startsWith("https://")) fail("UPSTREAM_URL must be https");
+
+// A proxy that is configured but not honoured would send the key straight out to
+// the internet, so stop rather than make that request.
+if (process.env.HTTPS_PROXY && process.env.NODE_USE_ENV_PROXY !== "1") {
+  fail("HTTPS_PROXY is set but NODE_USE_ENV_PROXY is not 1: requests would bypass the proxy");
+}
 
 let base;
 try {
@@ -86,7 +104,7 @@ const server = http.createServer((req, res) => {
     const name = key.toLowerCase();
     // Drop hop-by-hop headers and any caller credentials. Onboarding's validation
     // probe sends x-api-key, which a bearer-token upstream rejects alongside the token.
-    if (["host", "authorization", "connection", "proxy-authorization", "x-api-key"].includes(name)) continue;
+    if (HOP_BY_HOP.has(name) || ["host", "authorization", "x-api-key"].includes(name)) continue;
     headers[key] = value;
   }
   headers.host = base.host;
@@ -104,7 +122,12 @@ const server = http.createServer((req, res) => {
         status: upstreamRes.statusCode,
         ms: Date.now() - started,
       });
-      res.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
+      const out = {};
+      for (const [key, value] of Object.entries(upstreamRes.headers)) {
+        if (HOP_BY_HOP.has(key.toLowerCase())) continue;
+        out[key] = value;
+      }
+      res.writeHead(upstreamRes.statusCode || 502, out);
       upstreamRes.pipe(res);
     },
   );
