@@ -120,4 +120,4 @@ Open any ibl.ai application (Mentor AI, Skills AI, or your own integration) and 
 
 ## Troubleshooting
 
-See the [snags reference](docs/server-setup.md#snags-reference) in the server setup guide and the [connectivity checks](docs/platform-integration.md#test-connectivity) in the platform integration guide.
+See the [troubleshooting section](docs/server-setup.md#troubleshooting) in the server setup guide and the [connectivity checks](docs/platform-integration.md#test-connectivity) in the platform integration guide.
