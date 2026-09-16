@@ -91,6 +91,7 @@ Ask for **exact hostnames**, and check how the proxy matches them. Some proxies 
 | `www.nvidia.com` | the NemoClaw installer script |
 | `github.com` | NemoClaw source checkout, plugin clone |
 | `raw.githubusercontent.com` | nvm installer, the relay script |
+| `codeload.github.com`, `objects.githubusercontent.com` | GitHub's download hosts, which clones and archive fetches redirect to |
 | `release-assets.githubusercontent.com` | OpenShell release binaries. Without it the install stops at "Installing OpenShell CLI" with a `403` |
 | `nodejs.org` | Node.js runtime (via nvm) |
 | `registry.npmjs.org` | npm packages in the image build and the plugin build |
@@ -98,8 +99,6 @@ Ask for **exact hostnames**, and check how the proxy matches them. Some proxies 
 | `registry-1.docker.io`, `auth.docker.io`, `production.cloudfront.docker.com` | Docker Hub images (build stages, ollama) |
 | `deb.debian.org` | system packages inside the image build |
 | `ollama.com`, `registry.ollama.ai` | only on the local-model route in [Part 3](#part-3-install-nemoclaw); not needed if you onboard straight at the relay |
-
-`codeload.github.com` and `objects.githubusercontent.com` are GitHub's download hosts. Request them in the same batch: if a download redirects to one of them mid-install, a second approval round costs more than the two extra entries.
 
 **Needed for normal operation:**
 
